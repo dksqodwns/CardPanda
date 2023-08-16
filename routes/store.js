@@ -1,0 +1,89 @@
+const express = require('express');
+const router = express.Router();
+const {Store, UserStore, UserCard, Card, CardBenefit, Benefit, User,StoreBenefit} = require('../models');
+const isLoggedIn = require('../passport/isLoggedIn');
+
+// 매장 리스트 조회
+router.get('/', async (req, res) => {
+    try {
+        const stores = await Store.findAll({
+            attributes: ['store_name', 'store_category']
+        });
+        res.status(200).json(stores);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({message: 'Server error'});
+    }
+});
+
+// 매장 상세정보 조회
+router.get('/detail/:storeid',isLoggedIn, async (req, res) => {
+    try {
+        const storeid = req.params.storeid;
+        const userid = req.user.userid;
+
+        const userCards = await UserCard.findAll({
+            where: {
+                userid: userid
+            },
+            attributes: ['cardid']
+        });
+
+        const userCardIds = userCards.map(uc => uc.cardid);
+
+        const storeWithBenefits = await Store.findOne({
+            where: {
+                storeid: storeid
+            },
+            include: [{
+                model: Benefit,
+                through: { model: StoreBenefit },
+                include: [{
+                    model: Card,
+                    where: {
+                        cardid: userCardIds  // Filter by user's card IDs
+                    },
+                    through: { attributes: [] },
+                    attributes: ['card_name', 'card_image', 'card_company']
+                }],
+                attributes: ['benefit_detail']
+            }]
+        });
+
+        res.status(200).json(storeWithBenefits);
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({message: 'Server error'});
+    }
+});
+
+router.post('/addstore/:storeid', isLoggedIn, async (req, res) => {
+    try {
+        const userid = req.user.userid;
+        const storeid = req.params.storeid;
+
+        const existingUserStore = await UserStore.findOne({
+            where: {
+                userid: userid,
+                storeid: storeid
+            }
+        });
+
+        if (existingUserStore) {
+            return res.status(409).json({message: 'Store already added'});
+        }
+
+        await UserStore.create({
+            userid: userid,
+            storeid: storeid
+        });
+
+        res.status(201).json({message: 'Store added'});
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({message: 'Server error'});
+    }
+});
+
+module.exports = router;
