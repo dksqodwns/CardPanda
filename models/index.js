@@ -47,5 +47,7 @@ db.UserCard.belongsTo(db.User, { foreignKey: 'userid' });
 db.UserCard.belongsTo(db.Card, { foreignKey: 'cardid'});
 db.Card.hasMany(db.UserCard, { foreignKey: 'cardid' });
 
+db.UserStore.belongsTo(db.Store, { foreignKey: 'storeid' });
+db.Store.hasMany(db.UserStore, { foreignKey: 'storeid' });
 
 module.exports = db;

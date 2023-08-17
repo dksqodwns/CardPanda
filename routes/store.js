@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
 });
 
 // 매장 상세정보 조회
-router.get('/detail/:storeid',isLoggedIn, async (req, res) => {
+router.get('/detail/:storeid', isLoggedIn, async (req, res) => {
     try {
         const storeid = req.params.storeid;
         const userid = req.user.userid;
@@ -41,22 +41,33 @@ router.get('/detail/:storeid',isLoggedIn, async (req, res) => {
                 include: [{
                     model: Card,
                     where: {
-                        cardid: userCardIds  // Filter by user's card IDs
+                        cardid: userCardIds
                     },
                     through: { attributes: [] },
                     attributes: ['card_name', 'card_image', 'card_company']
                 }],
                 attributes: ['benefit_detail']
-            }]
+            }],
+            attributes: ['store_name']
         });
 
-        res.status(200).json(storeWithBenefits);
+        const formattedData = {
+            store_name: storeWithBenefits.store_name,
+            매장_혜택: storeWithBenefits.Benefit.map(benefit => ({
+                card_name: benefit.Card[0].card_name,
+                card_image: benefit.Card[0].card_image,
+                card_company: benefit.Card[0].card_company,
+                benefit_detail: benefit.benefit_detail
+            }))
+        };
 
+        res.status(200).json(formattedData);
     } catch (err) {
         console.error(err);
         res.status(500).json({message: 'Server error'});
     }
 });
+
 
 router.post('/addstore/:storeid', isLoggedIn, async (req, res) => {
     try {
