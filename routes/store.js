@@ -53,13 +53,20 @@ router.get('/detail/:storeid', isLoggedIn, async (req, res) => {
 
         const formattedData = {
             store_name: storeWithBenefits.store_name,
-            매장_혜택: storeWithBenefits.Benefit.map(benefit => ({
-                card_name: benefit.Card[0].card_name,
-                card_image: benefit.Card[0].card_image,
-                card_company: benefit.Card[0].card_company,
-                benefit_detail: benefit.benefit_detail
-            }))
+            Benefit: storeWithBenefits.Benefit && storeWithBenefits.Benefit.length ? storeWithBenefits.Benefit.map(benefit => {
+                if (benefit.Card && benefit.Card.length) {
+                    return {
+                        card_name: benefit.Card[0].card_name,
+                        card_image: benefit.Card[0].card_image,
+                        card_company: benefit.Card[0].card_company,
+                        benefit_detail: benefit.benefit_detail
+                    };
+                } else {
+                    return null;
+                }
+            }).filter(item => item !== null) : []
         };
+
 
         res.status(200).json(formattedData);
     } catch (err) {
