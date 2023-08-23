@@ -3,7 +3,6 @@ const router = express.Router();
 const {Store, UserStore, UserCard, Card, CardBenefit, Benefit, User,StoreBenefit} = require('../models');
 const isLoggedIn = require('../passport/isLoggedIn');
 
-// 매장 리스트 조회
 router.get('/', async (req, res) => {
     try {
         const stores = await Store.findAll({
@@ -43,7 +42,6 @@ router.get('/detail/:storeid', isLoggedIn, async (req, res) => {
                     where: {
                         cardid: userCardIds
                     },
-                    through: { attributes: [] },
                     attributes: ['card_name', 'card_image', 'card_company']
                 }],
                 attributes: ['benefit_detail']
@@ -67,13 +65,13 @@ router.get('/detail/:storeid', isLoggedIn, async (req, res) => {
             }).filter(item => item !== null) : []
         };
 
-
         res.status(200).json(formattedData);
     } catch (err) {
         console.error(err);
         res.status(500).json({message: 'Server error'});
     }
 });
+
 
 
 router.post('/addstore/:storeid', isLoggedIn, async (req, res) => {
@@ -98,6 +96,28 @@ router.post('/addstore/:storeid', isLoggedIn, async (req, res) => {
         });
 
         res.status(201).json({message: 'Store added'});
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({message: 'Server error'});
+    }
+});
+
+router.get('/:category_number', async (req, res) => {
+    try {
+        const categoryNumber = parseInt(req.params.category_number, 10);
+
+        if (isNaN(categoryNumber)) {
+            return res.status(400).json({message: 'Invalid category number'});
+        }
+
+        const stores = await Store.findAll({
+            where: {
+                category_number: categoryNumber
+            },
+            attributes: ['store_name']
+        });
+
+        res.status(200).json(stores);
     } catch (err) {
         console.error(err);
         res.status(500).json({message: 'Server error'});
