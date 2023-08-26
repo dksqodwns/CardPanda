@@ -5,6 +5,8 @@ module.exports = (sequelize, DataTypes) => {
             primaryKey: true,
             autoIncrement: true
         },
+        storeid: DataTypes.INTEGER,
+        category_number: DataTypes.INTEGER,
         store_category: DataTypes.STRING,
         benefit_detail: DataTypes.TEXT
     },{

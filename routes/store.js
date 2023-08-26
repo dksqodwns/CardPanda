@@ -49,7 +49,7 @@ router.get('/detail/:storeid', isLoggedIn, async (req, res) => {
 
         const benefits = await Benefit.findAll({
             where: { benefitid: userBenefitIds },
-            attributes: ['benefit_detail']
+            attributes: ['benefit_detail', 'category_number']
         });
 
         const user = await User.findOne({
@@ -59,8 +59,10 @@ router.get('/detail/:storeid', isLoggedIn, async (req, res) => {
 
         const store = await Store.findOne({
             where: { storeid },
-            attributes: ['store_name']
+            attributes: ['store_name', 'category_number']
         });
+
+        const filteredBenefits = benefits.filter(b => b.category_number === store.category_number);
 
         const cards = await Card.findAll({
             where: { cardid: userCardIds },
@@ -74,7 +76,7 @@ router.get('/detail/:storeid', isLoggedIn, async (req, res) => {
                 card_company: card.card_company,
                 card_name: card.card_name,
                 card_image: card.card_image,
-                Benefit: benefits.map(b => ({ benefit_detail: b.benefit_detail }))
+                Benefit: filteredBenefits.map(b => ({ benefit_detail: b.benefit_detail }))
             }))
         };
 
@@ -84,6 +86,7 @@ router.get('/detail/:storeid', isLoggedIn, async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
+
 
 
 router.post('/addstore/:storeid', isLoggedIn, async (req, res) => {

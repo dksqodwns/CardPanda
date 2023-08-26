@@ -8,6 +8,7 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             primaryKey: true
         },
+        category_number: DataTypes.INTEGER,
     }, {
         tableName: "store_benefit",
         timestamps: false
