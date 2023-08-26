@@ -15,63 +15,75 @@ router.get('/', async (req, res) => {
     }
 });
 
-// 매장 상세정보 조회
 router.get('/detail/:storeid', isLoggedIn, async (req, res) => {
     try {
         const storeid = req.params.storeid;
         const userid = req.user.userid;
 
+        const storeBenefits = await StoreBenefit.findAll({
+            where: { storeid },
+            attributes: ['benefitid']
+        });
+        const benefitIds = storeBenefits.map(sb => sb.benefitid);
+
+        const cardBenefits = await CardBenefit.findAll({
+            where: { benefitid: benefitIds },
+            attributes: ['cardid']
+        });
+        const cardIds = cardBenefits.map(cb => cb.cardid);
+
         const userCards = await UserCard.findAll({
             where: {
-                userid: userid
+                userid,
+                cardid: cardIds
             },
             attributes: ['cardid']
         });
-
         const userCardIds = userCards.map(uc => uc.cardid);
 
-        const storeWithBenefits = await Store.findOne({
-            where: {
-                storeid: storeid
-            },
-            include: [{
-                model: Benefit,
-                through: { model: StoreBenefit },
-                include: [{
-                    model: Card,
-                    where: {
-                        cardid: userCardIds
-                    },
-                    attributes: ['card_name', 'card_image', 'card_company']
-                }],
-                attributes: ['benefit_detail']
-            }],
+        const userCardBenefits = await CardBenefit.findAll({
+            where: { cardid: userCardIds },
+            attributes: ['benefitid']
+        });
+        const userBenefitIds = userCardBenefits.map(ucb => ucb.benefitid);
+
+        const benefits = await Benefit.findAll({
+            where: { benefitid: userBenefitIds },
+            attributes: ['benefit_detail']
+        });
+
+        const user = await User.findOne({
+            where: { userid },
+            attributes: ['name']
+        });
+
+        const store = await Store.findOne({
+            where: { storeid },
             attributes: ['store_name']
         });
 
-        const formattedData = {
-            store_name: storeWithBenefits.store_name,
-            Benefit: storeWithBenefits.Benefit && storeWithBenefits.Benefit.length ? storeWithBenefits.Benefit.map(benefit => {
-                if (benefit.Card && benefit.Card.length) {
-                    return {
-                        card_name: benefit.Card[0].card_name,
-                        card_image: benefit.Card[0].card_image,
-                        card_company: benefit.Card[0].card_company,
-                        benefit_detail: benefit.benefit_detail
-                    };
-                } else {
-                    return null;
-                }
-            }).filter(item => item !== null) : []
+        const cards = await Card.findAll({
+            where: { cardid: userCardIds },
+            attributes: ['card_company', 'card_name', 'card_image']
+        });
+
+        const result = {
+            user: user.name,
+            store_name: store.store_name,
+            Card: cards.map(card => ({
+                card_company: card.card_company,
+                card_name: card.card_name,
+                card_image: card.card_image,
+                Benefit: benefits.map(b => ({ benefit_detail: b.benefit_detail }))
+            }))
         };
 
-        res.status(200).json(formattedData);
+        res.status(200).json(result);
     } catch (err) {
         console.error(err);
-        res.status(500).json({message: 'Server error'});
+        res.status(500).json({ message: 'Server error' });
     }
 });
-
 
 
 router.post('/addstore/:storeid', isLoggedIn, async (req, res) => {
